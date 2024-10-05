@@ -1,7 +1,7 @@
 local screen_w, screen_h = guiGetScreenSize ();
 
 EditBox = {};
-EditBox.__ = EditBox;
+EditBox.__index = EditBox;
 
 function EditBox:new (index, text, number, max, font, size, masked)
     if not self.data[index] then
