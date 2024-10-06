@@ -1,4 +1,4 @@
-local screen_w, screen_h = guiGetScreenSize ();
+local screenW, screenH = guiGetScreenSize ();
 
 EditBox = {};
 EditBox.__index = EditBox;
@@ -19,25 +19,22 @@ function EditBox:draw (index, x, y, w, h, color, color_2)
     end
 
     local data = self.data[index]
-
-    h = h + 15
-
-    data.pos = {x, y, w, h}
-
     local text = data.text
 
     if (data.masked == true) then
         text = data.text ~= data.text_2 and string.gsub (data.text, '.', '*') or data.text
     end
-    
+
+    data.pos = {x, y, w, h}
+
     local string = string.sub (text, 1, data.string);
     local width = dxGetTextWidth (string, data.size, data.font);
 
-    local textWidth = dxGetTextWidth (text, data.size, data.font);
+    local rect = dxGetTextWidth (text, data.size, data.font);
     
     local side = ((x + width) > (x + w) and 'right' or 'left');
 
-    if (width > w and width < textWidth) then
+    if (width > w and width < rect) then
         text = string.sub (text, 1, data.string)
     end
 
@@ -51,11 +48,11 @@ function EditBox:draw (index, x, y, w, h, color, color_2)
         local size = dxGetFontHeight (data.size, data.font);
         
         if (self.lctrl) then
-            local lcrtl_size = math.min(w, textWidth)
+            local w_size = math.min(w, rect)
 
-            dxDrawRectangle (
+            dxDrawRectangle(
                 x - 2, 
-                y, lcrtl_size + 1, 
+                y, w_size + 1, 
                 size, tocolor(89, 154, 248, 100), true
             )
         end
@@ -76,16 +73,16 @@ function EditBox:draw (index, x, y, w, h, color, color_2)
             end
         end
 
-        local rectanglePos = math.min (x + w, x + width)
+        local rectangle = math.min (x + w, x + width)
         
         if (data.text == data.text_2) then
-            rectanglePos = math.min (x, x + width)
+            rectangle = math.min (x, x + width)
         end
 
-        dxDrawRectangle (
-            rectanglePos, 
+        dxDrawRectangle(
+            rectangle, 
             y, 1, 
-            size, tocolor(255, 255, 255, self.animation * 255), true
+            size, tocolor(0, 0, 0, self.animation * 255), true
         )
     end
 
@@ -132,23 +129,6 @@ function EditBox:key (key, press)
         return false;
     end
     
-    if (key == 'backspace') then
-        if (not self.lctrl) then
-            if (data.text ~= '' and data.text ~= data.text_2) then
-                if (data.string > 0) then
-                    data.text = string.sub(data.text, 1, data.string - 1)..string.sub (data.text, data.string + 1)
-
-                    data.string = data.string - 1
-                end
-            end
-        else
-            data.text = data.text_2
-
-            data.string = 0
-            self.lctrl = false
-        end
-    end
-    
     if (key == 'arrow_l') then
         if (data.string > 0) then
             data.string = data.string - 1
@@ -177,6 +157,23 @@ function EditBox:key (key, press)
         end
         
         setClipboard (data.text)
+    end
+
+    if (key == 'backspace') then
+        if (not self.lctrl) then
+            if (data.text ~= '' and data.text ~= data.text_2) then
+                if (data.string > 0) then
+                    data.text = string.sub(data.text, 1, data.string - 1)..string.sub (data.text, data.string + 1)
+
+                    data.string = data.string - 1
+                end
+            end
+        else
+            data.text = ''
+
+            data.string = 0
+            self.lctrl = false
+        end
     end
 end;
 
@@ -226,7 +223,7 @@ function EditBox:character (character)
                 if (self.write) then
                     self.write = false
                 end
-            end, 1000, 1
+            end, 1500, 1
         )
     end
 end;
@@ -270,11 +267,22 @@ function EditBox:paste (text)
     end
 end;
 
-function EditBox:getText (index)
+function EditBox:getText_2 (index)
     if (not self.data[index]) then
         return ''
     end
     
+    return self.data[index].text_2
+end;
+
+function EditBox:getText (index)
+    if (not self.data[index]) then
+        return ''
+    end
+    if (self.data[index].text == '') then
+        return self.data[index].text_2
+    end
+
     return self.data[index].text
 end;
 
@@ -311,7 +319,7 @@ function EditBox:constructor ()
     self.cursor = function (x, y, w, h)
         local cx, cy = getCursorPosition ()
 
-        cx, cy = cx * screen_w, cy * screen_h
+        cx, cy = cx * screenW, cy * screenH
 
         if (cx > x and cx < (x + w) and cy > y and cy < (y + h)) then
             return true;
@@ -347,4 +355,8 @@ function EditBox:constructor ()
     return self;
 end;
 
-EditBox:constructor (...)
+addEventHandler ('onClientResourceStart', resourceRoot,
+    function ()
+        return EditBox:constructor ();
+    end
+);
